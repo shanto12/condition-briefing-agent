@@ -8,6 +8,18 @@
 </head>
 <body>
   <aside>
+    <div class="side-head">
+      <h2>Sessions</h2>
+      <button id="new" type="button">New briefing</button>
+    </div>
+    <ul id="sessions"></ul>
+    <h2>Documents</h2>
+    <form id="upload-form">
+      <input id="upload-file" type="file" accept=".md,.txt,.pdf">
+      <button id="upload" type="submit">Upload</button>
+    </form>
+    <p id="upload-status" class="note"></p>
+    <ul id="documents" class="docs"></ul>
     <h2>Briefing history</h2>
     <button id="refresh" type="button">Refresh</button>
     <ul id="history"></ul>
@@ -18,8 +30,8 @@
   <main>
     <header>
       <h1>Condition Briefing Copilot</h1>
+      <span id="session-status" class="pill" hidden></span>
       <label>Signed in as <input id="user" value="analyst.demo" maxlength="64" autocomplete="username"></label>
-      <button id="new" type="button">New briefing</button>
     </header>
     <p class="banner">Strategy and decision support only. Synthetic patient data. Not for diagnosis or treatment orders.</p>
     <section id="chat" aria-live="polite"></section>

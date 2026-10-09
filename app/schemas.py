@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-SourceType = Literal["pubmed", "clinicaltrials", "fda", "panel", "patient"]
+SourceType = Literal["pubmed", "clinicaltrials", "fda", "panel", "patient", "document"]
 
 
 class Source(BaseModel):
@@ -14,6 +14,7 @@ class Source(BaseModel):
     title: str
     url: str | None = None
     date: str | None = None
+    section: str | None = None
 
 
 class Claim(BaseModel):

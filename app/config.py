@@ -30,7 +30,7 @@ RERANK_MODEL = os.environ.get("RERANK_MODEL", "bge-reranker-v2-m3")
 RERANK_ON = os.environ.get("RERANK", "on") == "on"
 RETRIEVE_TOP_K = int(os.environ.get("RETRIEVE_TOP_K", "5"))
 # Below this rerank score the retriever reports "not in our documents" instead of passing weak chunks on.
-RERANK_MIN_SCORE = float(os.environ.get("RERANK_MIN_SCORE", "0.05"))
+RERANK_MIN_SCORE = float(os.environ.get("RERANK_MIN_SCORE", "0.3"))
 
 # Traces go through an explicit, redacting tracer only; the env-driven default tracer would bypass redaction.
 os.environ["LANGSMITH_TRACING"] = "false"

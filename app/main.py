@@ -1,4 +1,4 @@
-"""FastAPI app: chat endpoint, briefing history, audit view, and the static chat page."""
+"""FastAPI app: chat endpoint, resumable sessions, document upload, briefing history, audit view, and the static chat page."""
 from __future__ import annotations
 
 import logging
@@ -6,20 +6,23 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import store
 from .render import briefing_markdown
-from .service import chat_turn
+from .service import chat_turn, session_view
 
 log = logging.getLogger("briefing")
 STATIC = Path(__file__).parent / "static"
 USER_RE = re.compile(r"^[A-Za-z0-9._@-]{2,64}$")
+THREAD_RE = re.compile(r"^[a-f0-9]{32}$")
+UPLOAD_TYPES = {".md", ".txt", ".pdf"}
+UPLOAD_MAX_BYTES = 2 * 1024 * 1024
 
-app = FastAPI(title="Condition Briefing Copilot", version="0.1.0")
+app = FastAPI(title="Condition Briefing Copilot", version="0.2.0")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
@@ -61,11 +64,64 @@ def healthz():
 @app.post("/api/chat")
 def chat(body: ChatIn, x_user: str | None = Header(None)):
     user = require_user(x_user)
+    if body.thread_id:
+        session = store.get_session(body.thread_id)
+        if session and session["user"] != user:
+            raise HTTPException(status_code=404, detail="Not found")
     try:
         return chat_turn(user, body.message, body.thread_id, body.action)
     except Exception:
         log.exception("chat turn failed")
         return JSONResponse(status_code=500, content={"type": "error", "text": "The briefing run failed. Check the trace and retry."})
+
+
+@app.get("/api/sessions")
+def sessions(x_user: str | None = Header(None)):
+    return store.list_sessions(require_user(x_user))
+
+
+@app.get("/api/sessions/{thread_id}")
+def session(thread_id: str, x_user: str | None = Header(None)):
+    user = require_user(x_user)
+    view = session_view(thread_id, user) if THREAD_RE.fullmatch(thread_id) else None
+    if not view:
+        raise HTTPException(status_code=404, detail="Not found")
+    return view
+
+
+@app.get("/api/documents")
+def documents(x_user: str | None = Header(None)):
+    require_user(x_user)
+    try:
+        from .rag import list_documents
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Document store is not available yet.")
+    return list_documents()
+
+
+@app.post("/api/documents")
+def upload_document(file: UploadFile = File(...), x_user: str | None = Header(None)):
+    user = require_user(x_user)
+    name = Path(file.filename or "").name
+    if Path(name).suffix.lower() not in UPLOAD_TYPES:
+        raise HTTPException(status_code=415, detail="Only .md, .txt and .pdf files are accepted.")
+    data = file.file.read(UPLOAD_MAX_BYTES + 1)
+    if len(data) > UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File is larger than 2 MB.")
+    if not data:
+        raise HTTPException(status_code=400, detail="File is empty.")
+    try:
+        from .rag import ingest_bytes
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Document store is not available yet.")
+    try:
+        result = ingest_bytes(name, data, user)
+    except Exception:
+        log.exception("document ingest failed")
+        raise HTTPException(status_code=500, detail="Document ingest failed. Check the server log.")
+    if not result.get("ok"):
+        raise HTTPException(status_code=422, detail=result.get("reason") or "Document rejected.")
+    return result
 
 
 @app.get("/api/briefings")

@@ -1,0 +1,12 @@
+{"id": "r01", "question": "How many infusion chairs does Northlake have and what is current utilization?", "expected_doc_id": "infusion-capacity-q3-2026", "answerable": true}
+{"id": "r02", "question": "What is the median wait for a new memory clinic visit?", "expected_doc_id": "memory-clinic-referrals-fy2026", "answerable": true}
+{"id": "r03", "question": "What does Medicare require to cover anti-amyloid antibodies?", "expected_doc_id": "payer-policy-anti-amyloid", "answerable": true}
+{"id": "r04", "question": "How many additional MRI scans would ARIA safety monitoring add in year one?", "expected_doc_id": "mri-capacity-aria-monitoring", "answerable": true}
+{"id": "r05", "question": "Which roles do we need to hire to run an anti-amyloid program?", "expected_doc_id": "dementia-workforce-plan", "answerable": true}
+{"id": "r06", "question": "How many residents aged 65 and older live in our service area?", "expected_doc_id": "chna-dementia-2026", "answerable": true}
+{"id": "r07", "question": "Which regional competitors already offer anti-amyloid infusion?", "expected_doc_id": "regional-competitor-landscape", "answerable": true}
+{"id": "r08", "question": "What steps are in our anti-amyloid evaluation pathway before treatment starts?", "expected_doc_id": "clinical-pathway-anti-amyloid", "answerable": true}
+{"id": "r09", "question": "Are we participating in the CMS GUIDE model for dementia care?", "expected_doc_id": "caregiver-support-program", "answerable": true}
+{"id": "r10", "question": "What options did the FY2027 strategy memo compare for memory care?", "expected_doc_id": "memory-care-strategy-fy27", "answerable": true}
+{"id": "r11", "question": "How many research coordinators support dementia trials?", "expected_doc_id": "research-office-trial-capability", "answerable": true}
+{"id": "r12", "question": "What is the pediatric oncology inpatient bed count at North Campus?", "expected_doc_id": null, "answerable": false}

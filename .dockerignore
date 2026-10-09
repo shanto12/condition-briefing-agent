@@ -1,0 +1,25 @@
+# The image copies only requirements.txt, app/, corpus/ and data/patients.json.
+# Everything else stays out of the build context so local state and secrets never reach a builder.
+
+# Runtime state: app.db*, checkpoints.db* (with -wal/-shm), chroma/, backups. Only the synthetic panel ships.
+data/*
+!data/patients.json
+
+# Cached public API responses; the container fills its own cache under /data/fixtures.
+fixtures
+
+# Eval outputs and their scratch databases
+evals/results
+evals/.evaldata
+
+# Secrets and local tooling
+.env
+.env.*
+*.pem
+*.key
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.DS_Store
+*.log

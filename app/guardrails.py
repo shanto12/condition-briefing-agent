@@ -33,7 +33,7 @@ INJECTION = re.compile(
     r"|\byou are now\b|\b(system|developer) prompt\b|</?(system|assistant|user|source)>|\bnew instructions?:)",
     re.I)
 
-_ID = r"(?:PMID:\s?\d+|NCT\d{8}|FDA:\s?(?:NDA|BLA|ANDA)\d{6}|PANEL:[\w-]+|PATIENT:P\d{3})"
+_ID = r"(?:PMID:\s?\d+|NCT\d{8}|FDA:\s?(?:NDA|BLA|ANDA)\d{6}|PANEL:[\w-]+|PATIENT:P\d{3}|DOC:[\w.-]+#\d+)"
 INLINE_IDS = re.compile(rf"\s*[\(\[]\s*(?:sources?:\s*)?{_ID}(?:\s*[,;]\s*{_ID})*\s*[\)\]]", re.I)
 
 CITATION_FORMATS = {
@@ -42,6 +42,7 @@ CITATION_FORMATS = {
     "fda": re.compile(r"^FDA:(NDA|BLA|ANDA)\d{6}$"),
     "panel": re.compile(r"^PANEL:[\w-]+$"),
     "patient": re.compile(r"^PATIENT:P\d{3}$"),
+    "document": re.compile(r"^DOC:[a-z0-9][\w.-]*#\d+$"),
 }
 
 
@@ -79,6 +80,19 @@ def redact_text(text: str) -> str:
     text = DOB.sub("[DOB]", text)
     text = EMAIL.sub("[EMAIL]", text)
     return PHONE.sub("[PHONE]", text)
+
+
+def phi_findings(text: str) -> list[str]:
+    """Names of the PHI patterns present. Used to reject uploads before any text leaves the machine."""
+    from .patients import identifier_denylist
+
+    text = text or ""
+    found = [name for name, pattern in (("SSN", SSN), ("MRN", MRN), ("DOB", DOB), ("phone", PHONE), ("email", EMAIL))
+             if pattern.search(text)]
+    lowered = text.lower()
+    if any(t and " " in t and t.lower() in lowered for t in identifier_denylist()):
+        found.append("known patient name or address")
+    return found
 
 
 def redact_payload(obj):
@@ -126,10 +140,13 @@ def normalize_citation(raw: str) -> str:
         (r"(?i)^(?:fda[:\s]*)?((?:nda|bla|anda)\d{6})$", "FDA:{}"),
         (r"(?i)^patient[:\s]*(p\d{3})$", "PATIENT:{}"),
         (r"(?i)^panel[:\s]*([\w-]+)$", "PANEL:{}"),
+        (r"(?i)^doc[:\s]*([\w.-]+#\d+)$", "DOC:{}"),
     ):
         m = re.match(pattern, c)
         if m:
             value = m.group(1)
+            if fmt.startswith("DOC"):
+                return fmt.format(value.lower())
             return fmt.format(value.upper() if not fmt.startswith("PANEL") else value)
     return c
 

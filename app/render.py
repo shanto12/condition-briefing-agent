@@ -91,6 +91,34 @@ def briefing_markdown(b: dict, status: str = "draft") -> str:
         out += [f"- ~~{_cell(r['text'])}~~ ({r['section']}: {'; '.join(r['reasons'])})" for r in v["removed"]]
     if b.get("guardrail_events"):
         out += ["", "## Run log and guardrail events", *[f"- {e}" for e in b["guardrail_events"]]]
-    out += ["", f"## Sources ({len(b.get('sources', []))})"]
-    out += [f"- {_cite(s['id'], src)}: {_cell(s['title'])}" + (f" ({s['date']})" if s.get("date") else "") for s in b.get("sources", [])]
+    out += ["", f"## Sources ({len(b.get('sources', []))})", *_source_lines(b.get("sources", []), src)]
+    return "\n".join(out)
+
+
+def _source_lines(sources: list[dict], src: dict[str, dict]) -> list[str]:
+    lines = []
+    for s in sources:
+        label = _cell(s["title"])
+        if s.get("type") == "document":
+            label = f"{label}, section \"{_cell(s.get('section'))}\" (internal document, synthetic)"
+        lines.append(f"- {_cite(s['id'], src)}: {label}" + (f" ({s['date']})" if s.get("date") else ""))
+    return lines
+
+
+def followup_markdown(answer: dict) -> str:
+    src = {s["id"]: s for s in answer.get("sources", [])}
+    out = [f"**Follow-up:** {_cell(answer['question'])}", ""]
+    if answer.get("refused"):
+        return "\n".join(out + [answer["reason"]])
+    if answer.get("claims"):
+        out += _claims(answer["claims"], src)
+    else:
+        out.append(f"_{answer.get('reason') or 'Not in our documents or the public sources searched.'}_")
+    if answer.get("removed"):
+        out += ["", "**Removed by the verifier**"]
+        out += [f"- ~~{_cell(r['text'])}~~ ({'; '.join(r['reasons'])})" for r in answer["removed"]]
+    if answer.get("tool_calls"):
+        out += ["", "_Research steps: " + "; ".join(f"{t['tool']}({_cell(t['query'])}) -> {t['results']}" for t in answer["tool_calls"]) + "_"]
+    if answer.get("sources"):
+        out += ["", f"**Sources ({len(answer['sources'])})**", *_source_lines(answer["sources"], src)]
     return "\n".join(out)
