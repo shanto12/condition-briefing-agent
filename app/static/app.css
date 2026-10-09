@@ -1,0 +1,31 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.5 -apple-system, system-ui, sans-serif; display: flex; height: 100vh; color: #1d2433; }
+aside { width: 280px; background: #f3f5f9; padding: 12px; overflow-y: auto; border-right: 1px solid #dde2ea; }
+aside h2 { font-size: 13px; text-transform: uppercase; color: #5a6475; margin: 16px 0 6px; }
+aside ul { list-style: none; padding: 0; margin: 8px 0; }
+aside li { padding: 6px; border-radius: 6px; cursor: pointer; }
+aside li:hover { background: #e3e8f0; }
+aside li small { display: block; color: #6b7587; }
+#audit-log { font-size: 11px; white-space: pre-wrap; }
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+header { display: flex; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #dde2ea; }
+header h1 { font-size: 18px; margin: 0 auto 0 0; }
+.banner { margin: 0; padding: 6px 16px; background: #fff6e0; color: #6b4e00; font-size: 12px; }
+#chat { flex: 1; overflow-y: auto; padding: 16px; }
+.msg { max-width: 980px; margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; }
+.msg.user { background: #e8f0ff; margin-left: auto; max-width: 560px; }
+.msg.bot { background: #fff; border: 1px solid #e1e5ec; }
+.msg.refusal { border-color: #e2a3a3; background: #fff4f4; }
+.msg table { border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+.msg td, .msg th { border: 1px solid #dde2ea; padding: 3px 6px; vertical-align: top; }
+.msg blockquote { margin: 6px 0; padding: 4px 10px; border-left: 4px solid #d08a00; background: #fff8ea; }
+.msg h1 { font-size: 20px; } .msg h2 { font-size: 16px; margin-top: 18px; }
+.msg code { background: #f1f3f7; padding: 0 3px; border-radius: 3px; }
+#review { padding: 8px 16px; display: flex; gap: 8px; }
+#review[hidden] { display: none; }
+#approve { background: #1f7a3a; color: #fff; }
+#reject { background: #a32626; color: #fff; }
+form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #dde2ea; }
+#message { flex: 1; padding: 10px; font-size: 15px; }
+button { padding: 8px 12px; border: 1px solid #c6ccd6; border-radius: 6px; background: #fff; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }

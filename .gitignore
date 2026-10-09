@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+.env
+data/*.db*
+data/chroma/
+evals/.evaldata/
+evals/results/
+fixtures/

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Condition Briefing Copilot</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <aside>
+    <h2>Briefing history</h2>
+    <button id="refresh" type="button">Refresh</button>
+    <ul id="history"></ul>
+    <h2>Access audit</h2>
+    <button id="audit" type="button">Show recent</button>
+    <pre id="audit-log"></pre>
+  </aside>
+  <main>
+    <header>
+      <h1>Condition Briefing Copilot</h1>
+      <label>Signed in as <input id="user" value="analyst.demo" maxlength="64" autocomplete="username"></label>
+      <button id="new" type="button">New briefing</button>
+    </header>
+    <p class="banner">Strategy and decision support only. Synthetic patient data. Not for diagnosis or treatment orders.</p>
+    <section id="chat" aria-live="polite"></section>
+    <div id="review" hidden>
+      <button id="approve" type="button">Approve (mark final)</button>
+      <button id="reject" type="button">Reject</button>
+    </div>
+    <form id="form">
+      <input id="message" placeholder="Enter a condition, e.g. dementia" maxlength="2000" autocomplete="off">
+      <button type="submit" id="send">Send</button>
+    </form>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
