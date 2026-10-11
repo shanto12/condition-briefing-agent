@@ -1,0 +1,76 @@
+{
+  "files": {
+    "board-memo-memory-care-investment-fy27.pdf": {
+      "doc_id": "board-memo-memory-care-investment-fy27",
+      "title": "Board Memo, Memory Care Investment Request FY27",
+      "doc_type": "board_memo",
+      "owner": "Strategy and Planning Office",
+      "date": "2026-09-24",
+      "synthetic": true
+    },
+    "anti-amyloid-infusion-sop.pdf": {
+      "doc_id": "anti-amyloid-infusion-sop",
+      "title": "Anti-Amyloid Infusion Program Standard Operating Procedure",
+      "doc_type": "standard_operating_procedure",
+      "owner": "Ambulatory Infusion Operations",
+      "date": "2026-09-18",
+      "synthetic": true
+    },
+    "medicare-advantage-dementia-contract-summary.pdf": {
+      "doc_id": "medicare-advantage-dementia-contract-summary",
+      "title": "Medicare Advantage Dementia Contract Summary",
+      "doc_type": "contract_summary",
+      "owner": "Revenue Cycle and Managed Care Contracting",
+      "date": "2026-09-10",
+      "synthetic": true
+    },
+    "memory-clinic-volumes-fy2024-fy2026.xlsx": {
+      "doc_id": "memory-clinic-volumes-fy2024-fy2026",
+      "title": "Memory Clinic Volumes by Month and Site, FY2024-FY2026",
+      "doc_type": "analytics_workbook",
+      "owner": "Neurosciences Analytics",
+      "date": "2026-08-15",
+      "synthetic": true
+    },
+    "infusion-chair-utilization-q3-2026.xlsx": {
+      "doc_id": "infusion-chair-utilization-q3-2026",
+      "title": "Infusion Chair Utilization by Site and Week, Q3 2026",
+      "doc_type": "operations_workbook",
+      "owner": "Ambulatory Infusion Operations",
+      "date": "2026-09-30",
+      "synthetic": true
+    },
+    "memory-care-pro-forma-fy27.xlsx": {
+      "doc_id": "memory-care-pro-forma-fy27",
+      "title": "Memory Care Service Line Pro Forma, FY27",
+      "doc_type": "financial_model",
+      "owner": "Finance and Strategy and Planning Office",
+      "date": "2026-09-20",
+      "synthetic": true
+    },
+    "steering-committee-notes-2026-09.txt": {
+      "doc_id": "steering-committee-notes-2026-09",
+      "title": "Memory Care Steering Committee Meeting Notes, September 2026",
+      "doc_type": "meeting_notes",
+      "owner": "Neurosciences Administration",
+      "date": "2026-09-17",
+      "synthetic": true
+    },
+    "pfac-dementia-feedback-summary-2026.txt": {
+      "doc_id": "pfac-dementia-feedback-summary-2026",
+      "title": "Patient and Family Advisory Council Feedback Summary, Dementia Care",
+      "doc_type": "feedback_summary",
+      "owner": "Patient Experience Office",
+      "date": "2026-08-27",
+      "synthetic": true
+    },
+    "it-requirements-ehr-dementia-registry-feed.txt": {
+      "doc_id": "it-requirements-ehr-dementia-registry-feed",
+      "title": "IT Requirements, EHR Dementia Registry Feed",
+      "doc_type": "it_requirements",
+      "owner": "Clinical Informatics",
+      "date": "2026-09-08",
+      "synthetic": true
+    }
+  }
+}

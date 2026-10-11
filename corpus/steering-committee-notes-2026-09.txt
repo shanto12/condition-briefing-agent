@@ -1,0 +1,33 @@
+SYNTHETIC DOCUMENT. Fabricated for a demo. Northlake Health is fictional. Attendees are listed by role only.
+
+MEMORY CARE STEERING COMMITTEE MEETING NOTES
+Date: 2026-09-17. Chair: VP Neurosciences.
+Attendees (by role): Strategy and Planning Office, Ambulatory Infusion Operations, Radiology Operations, Revenue Cycle, Clinical Research Office, Care Management, Clinical Informatics.
+
+STATUS REVIEWED
+- FY2026 closed at 2,430 memory clinic referrals; median wait to a new visit is 94 days against a 30-day target.
+- Infusion chairs ran at 86% in Q3 2026 (38 chairs). West Campus has slack for about 2 chairs today.
+- About 140 patients a year could be eligible for anti-amyloid therapy.
+- Northlake has not yet joined the CMS GUIDE Model.
+
+DECISIONS
+1. Recommend Option A (West Campus anti-amyloid program, $1.8M capital and start-up) to the Board Finance and Strategy Committee at its October meeting.
+2. Expand plasma p-tau217 blood biomarker triage from the pilot to all primary care referrals starting November 2026, to shorten time to diagnosis.
+3. Approve a pilot of 6 protected 3T MRI slots per week for ARIA-protocol scans, with a 24-hour read target.
+4. Prepare a CMS GUIDE Model application for the next available cohort. Care Management leads.
+5. Option B (partnering with Lakeshore Neuro Institute for infusion) is kept only as a fallback if neurologist recruitment fails.
+
+ACTION ITEMS
+- Revenue Cycle: finish prior-authorization templates for Payer A and Payer B and the registry-submission workflow by 2026-10-31.
+- Clinical Informatics: deliver the EHR dementia registry feed requirements for sign-off by 2026-10-15.
+- Radiology Operations: two neuroradiologists complete ARIA grading training by the end of Q4 2026.
+- Clinical Research Office: draft a sponsor feasibility package that uses the planned program; restate the ask for 2 research coordinator FTEs (current 3.0 FTE are shared with movement disorders).
+- Strategy and Planning Office: refresh the FY27 pro forma with the board tranche structure before the October meeting.
+
+RISKS RAISED
+- Neurologist recruitment takes 9 to 12 months; advanced practice providers cover follow-up visits in the meantime.
+- Without protected MRI slots, infusions could slip outside labeled monitoring windows.
+- Referral leakage: an estimated 180 to 220 referred patients a year already go to Lakeshore Neuro Institute.
+
+NEXT MEETING
+2026-10-22.

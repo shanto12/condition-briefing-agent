@@ -15,6 +15,12 @@ APP_DB = DATA_DIR / "app.db"
 CHECKPOINT_DB = DATA_DIR / "checkpoints.db"
 
 MODEL = os.environ.get("BRIEFING_MODEL", "deepseek-flash")
+# Reasoning budget: off|low|high|max. Default high.
+# While thinking is enabled, DeepSeek rejects forced tool_choice ("required" and a named
+# function) and rejects response_format json_schema. JSON mode and tool_choice "auto"
+# (or omitting tool_choice) are accepted, and those calls still reason.
+# Set DEEPSEEK_THINKING=off to disable thinking on every call.
+THINKING = os.environ.get("DEEPSEEK_THINKING", "high")
 LANGSMITH_PROJECT = os.environ.get("LANGSMITH_PROJECT", "live-build-interview")
 # Small-cell suppression for de-identified cohort counts. Demo panel is tiny; CMS-style reporting uses 11.
 COHORT_MIN_CELL = int(os.environ.get("COHORT_MIN_CELL", "3"))
@@ -71,9 +77,14 @@ def llm():
     key = _secret("DEEPSEEK_API_KEY", "codex-deepseek-interviews")
     if not key:
         raise RuntimeError("DeepSeek credential unavailable in environment or Keychain")
+    thinking = THINKING.strip().lower()
+    extra_body = {"thinking": {"type": "disabled" if thinking == "off" else "enabled"}}
+    kwargs: dict = {}
+    if thinking != "off":
+        kwargs["reasoning_effort"] = thinking
     return ChatDeepSeek(
         model=MODEL, api_key=key, temperature=0, timeout=90, max_retries=2,
-        extra_body={"thinking": {"type": "disabled"}},
+        extra_body=extra_body, **kwargs,
     )
 
 

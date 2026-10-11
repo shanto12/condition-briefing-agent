@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import store
+from . import loaders, store
 from .render import briefing_markdown
 from .service import chat_turn, session_view
 
@@ -19,7 +19,6 @@ log = logging.getLogger("briefing")
 STATIC = Path(__file__).parent / "static"
 USER_RE = re.compile(r"^[A-Za-z0-9._@-]{2,64}$")
 THREAD_RE = re.compile(r"^[a-f0-9]{32}$")
-UPLOAD_TYPES = {".md", ".txt", ".pdf"}
 UPLOAD_MAX_BYTES = 2 * 1024 * 1024
 
 app = FastAPI(title="Condition Briefing Copilot", version="0.2.0")
@@ -103,8 +102,9 @@ def documents(x_user: str | None = Header(None)):
 def upload_document(file: UploadFile = File(...), x_user: str | None = Header(None)):
     user = require_user(x_user)
     name = Path(file.filename or "").name
-    if Path(name).suffix.lower() not in UPLOAD_TYPES:
-        raise HTTPException(status_code=415, detail="Only .md, .txt and .pdf files are accepted.")
+    # Validated on extension; the browser-supplied MIME type varies (xlsx often arrives as octet-stream) and is ignored.
+    if Path(name).suffix.lower() not in loaders.SUFFIXES:
+        raise HTTPException(status_code=415, detail=f"Only {', '.join(loaders.SUFFIXES)} files are accepted.")
     data = file.file.read(UPLOAD_MAX_BYTES + 1)
     if len(data) > UPLOAD_MAX_BYTES:
         raise HTTPException(status_code=413, detail="File is larger than 2 MB.")

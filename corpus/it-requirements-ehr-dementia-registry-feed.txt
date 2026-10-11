@@ -1,0 +1,36 @@
+SYNTHETIC DOCUMENT. Fabricated for a demo. Northlake Health is fictional. This specification contains no patient data.
+
+IT REQUIREMENTS: EHR DEMENTIA REGISTRY FEED
+Owner: Clinical Informatics. Version 0.3, 2026-09-08. Status: draft for steering committee sign-off.
+
+PURPOSE
+CMS covers anti-amyloid antibodies under coverage with evidence development, which requires the treating clinician to take part in a qualifying registry. Missing registry data puts reimbursement at risk. This feed moves the required data from the EHR to the registry so clinicians do not re-key it.
+
+SCOPE
+- In scope: patients treated with an FDA-approved anti-amyloid antibody at the 3 dedicated West Campus infusion chairs.
+- Planning volume: about 140 treated patients in year one, about 2,730 infusion visits and about 880 added MRIs.
+- Out of scope for v1: cross-system data from Lakeshore Neuro Institute or other providers.
+
+FUNCTIONAL REQUIREMENTS
+FR-1 Capture the registry data set at baseline and at each qualifying visit: diagnosis stage, amyloid confirmation method, APOE e4 counseling documented, baseline MRI date, safety MRI results including ARIA findings, infusion dates and holds.
+FR-2 Submit a registry record within 14 calendar days of each qualifying visit (internal target).
+FR-3 Track the registration status of each treating clinician and block first-dose scheduling when the clinician is not registered.
+FR-4 Produce a weekly exception report of patients with missing registry fields, sent to the nurse navigators and Revenue Cycle.
+FR-5 Feed the same completeness flags to the prior-authorization templates for Payer A and Payer B.
+
+DATA HANDLING AND SECURITY
+- Transport: HL7 FHIR R4 over the approved integration engine, with a nightly batch and an SFTP fallback.
+- Patient identifiers travel only inside the approved interface; they never appear in logs, dashboards or this document.
+- Internal dashboards use de-identified, aggregate counts only.
+- Access is role-based and every submission is written to the audit log.
+
+NON-FUNCTIONAL REQUIREMENTS
+NFR-1 Availability: 99.5% monthly for the feed service.
+NFR-2 Alerting: feed failures page the Neurology Informatics on-call within 15 minutes.
+NFR-3 Retention: submission receipts kept for 10 years.
+NFR-4 Throughput: at least 500 records per nightly batch, well above year-one volume.
+
+DEPENDENCIES AND OPEN ITEMS
+- Registry vendor interface specification (pending from the registry operator).
+- Order sets and documentation templates for the anti-amyloid pathway in the EHR.
+- Decision on whether the GUIDE Model application, if submitted, reuses this feed for caregiver measures.

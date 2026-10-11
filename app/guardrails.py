@@ -17,7 +17,10 @@ CLINICAL_REQUEST = [
         r"\bwhat (dose|dosage|medication|drug|treatment) should (i|we|he|she|they|the patient|my patient|p\d{3}) "
         r"(give|prescribe|start|take|try|use|receive)\b",
         r"\b(dose|dosage|dosing)\b.*\b(patient|p\d{3})\b",
-        r"\bshould (i|we|he|she|they|the patient|my patient|p\d{3}) (start|stop|take|get|give|receive|switch|increase|decrease|discontinue)\b",
+        r"\bshould (i|he|she|they|the patient|my patient|p\d{3}) (start|stop|take|get|give|receive|switch|increase|decrease|discontinue)\b",
+        r"\bshould we (start|stop|take|get|give|receive|switch|increase|decrease|discontinue)\b.*"
+        r"\b(patients?|p\d{3}|\w+mab|donepezil|memantine|galantamine|rivastigmine|medications?|medicines?|drugs?|doses?|"
+        r"dosing|therapy|therapies|treatments?)\b",
         r"\b(diagnose|diagnosis for) (this|my|the|a) (patient|person|mother|father)\b",
         r"\bdoes (this|my|the) patient have\b",
         r"\btreatment (plan|order)s? for\b",

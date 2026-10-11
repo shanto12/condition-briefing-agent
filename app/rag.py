@@ -10,7 +10,6 @@ search: dense top 20 + BM25 top 20 -> reciprocal rank fusion -> Pinecone-hosted 
 from __future__ import annotations
 
 import hashlib
-import io
 import os
 import re
 import sys
@@ -26,6 +25,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharac
 from rank_bm25 import BM25Okapi
 
 from . import config as settings
+from . import loaders
 from .guardrails import neutralize_injection, phi_findings
 
 PINECONE = "https://api.pinecone.io"
@@ -36,7 +36,7 @@ RRF_K = 60
 RERANK_MIN_SCORE = float(os.environ.get("RERANK_MIN_SCORE", "0.3"))
 # Fallback when reranking is off or fails: keeps every answerable top-1 (min 0.52), but cannot reject off-corpus questions.
 COSINE_MIN = float(os.environ.get("COSINE_MIN", "0.5"))
-SUFFIXES = {".md", ".txt", ".pdf"}
+SUFFIXES = set(loaders.SUFFIXES)
 MAX_UPLOAD_BYTES = 2_000_000
 STOP = {"the", "a", "an", "of", "and", "or", "to", "in", "for", "on", "is", "are", "what", "how", "do", "does", "we",
         "our", "which", "with", "by", "at", "be", "it", "this", "that", "many", "much"}
@@ -178,44 +178,27 @@ def _rerank(query: str, docs: list[tuple[str, str]]) -> list[tuple[str, float]]:
 
 # ---------------- parsing and chunking ----------------
 
-def _front_matter(text: str) -> tuple[dict, str]:
-    m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.S)
-    if not m:
-        return {}, text
-    meta = {}
-    for line in m.group(1).splitlines():
-        if ":" in line:
-            key, value = line.split(":", 1)
-            meta[key.strip()] = value.strip().strip('"')
-    return meta, text[m.end():]
+_front_matter = loaders._front_matter
 
 
-def _decode(filename: str, data: bytes) -> str:
-    if filename.lower().endswith(".pdf"):
-        from pypdf import PdfReader
-
-        return "\n\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(data)).pages)
-    return data.decode("utf-8", errors="replace")
-
-
-def parse(filename: str, data: bytes, source: str, user: str | None = None) -> dict:
-    """Returns a document dict, or {"reason": ...} when the PHI gate rejects it. Nothing is sent anywhere here."""
-    raw = _decode(filename, data)
-    phi = phi_findings(raw)
+def parse(filename: str, data: bytes, source: str, user: str | None = None,
+          loaded: loaders.LoadedDoc | None = None) -> dict:
+    """Returns a document dict, or {"reason": ...} when the PHI gate rejects it. Nothing is sent anywhere here.
+    Raises ValueError for unsupported or unreadable files."""
+    loaded = loaded or loaders.load_bytes(filename, data)
+    phi = phi_findings(loaded.scan_text)
     if phi:
         return {"reason": f"Rejected before embedding: PHI patterns found ({', '.join(phi)}). Remove identifiers and re-upload."}
-    meta, body = _front_matter(raw)
+    meta, body = loaded.meta, loaded.body
     lines, removed = [], 0
     for line in body.splitlines():
         clean, n = neutralize_injection(line)
         lines.append(clean)
         removed += n
     flags = [f"injection: {removed} instruction-like sentence(s) removed"] if removed else []
-    stem = Path(filename).stem
     return {
-        "doc_id": _slug(meta.get("doc_id") or stem), "title": meta.get("title") or stem.replace("-", " ").title(),
-        "doc_type": meta.get("doc_type", "document"), "date": meta.get("date", ""),
-        "synthetic": str(meta.get("synthetic", "false")).lower() == "true", "body": "\n".join(lines),
+        "doc_id": _slug(meta["doc_id"]), "title": meta["title"], "doc_type": meta["doc_type"], "date": meta["date"],
+        "synthetic": bool(meta["synthetic"]), "source_format": meta.get("source_format", ""), "body": "\n".join(lines),
         "content_hash": hashlib.sha256(data).hexdigest()[:16], "source": source, "uploaded_by": user or "",
         "flags": flags,
     }
@@ -233,7 +216,8 @@ def chunk(doc: dict) -> list[dict]:
             out.append({"id": chunk_id, "text": f"{doc['title']} - {heading}\n{piece.strip()}", "metadata": {
                 "chunk_id": chunk_id, "doc_id": doc["doc_id"], "title": doc["title"], "doc_type": doc["doc_type"],
                 "date": doc["date"], "section": heading, "synthetic": doc["synthetic"], "content_hash": doc["content_hash"],
-                "source": doc["source"], "uploaded_by": doc["uploaded_by"], "injection_flag": bool(doc["flags"]), "chunk": n}})
+                "source": doc["source"], "source_format": doc.get("source_format", ""), "uploaded_by": doc["uploaded_by"],
+                "injection_flag": bool(doc["flags"]), "chunk": n}})
     return out
 
 
@@ -267,7 +251,11 @@ def ingest_corpus(idx: Index | None = None) -> dict:
     idx = idx or index()
     results = []
     for path in sorted(p for p in settings.CORPUS_DIR.iterdir() if p.suffix.lower() in SUFFIXES):
-        doc = parse(path.name, path.read_bytes(), "corpus")
+        try:
+            doc = parse(path.name, path.read_bytes(), "corpus", loaded=loaders.load_path(path))
+        except ValueError as exc:
+            results.append({"file": path.name, "ok": False, "reason": str(exc)})
+            continue
         results.append({"file": path.name, **(idx.add(doc) if "reason" not in doc else {"ok": False, "reason": doc["reason"]})})
     return {"collection": idx.collection.name, "documents": len(results), "chunks": idx.count(),
             "embedded": sum(1 for r in results if r.get("ok") and not r.get("skipped")),
@@ -277,10 +265,13 @@ def ingest_corpus(idx: Index | None = None) -> dict:
 def ingest_bytes(filename: str, data: bytes, user: str) -> dict:
     name = Path(filename or "").name
     if Path(name).suffix.lower() not in SUFFIXES:
-        return {"ok": False, "reason": "Only .md, .txt and .pdf files are accepted."}
+        return {"ok": False, "reason": f"Only {', '.join(loaders.SUFFIXES)} files are accepted."}
     if not data or len(data) > MAX_UPLOAD_BYTES:
         return {"ok": False, "reason": "File is empty or larger than 2 MB."}
-    doc = parse(name, data, "upload", user)
+    try:
+        doc = parse(name, data, "upload", user, loaded=loaders.load_bytes(name, data))
+    except ValueError as exc:
+        return {"ok": False, "reason": str(exc)}
     if "reason" in doc:
         return {"ok": False, "reason": doc["reason"]}
     return index().add(doc)

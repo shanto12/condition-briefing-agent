@@ -17,6 +17,44 @@ def _claims(claims: list[dict], sources: dict[str, dict]) -> list[str]:
     return [f"- {c['text']} " + " ".join(_cite(i, sources) for i in c["citations"]) for c in claims]
 
 
+def _is_document(s: dict) -> bool:
+    return s.get("type") == "document" or str(s.get("id", "")).startswith("DOC:")
+
+
+def _dedupe_sources(sources: list[dict]) -> list[dict]:
+    seen: dict[str, dict] = {}
+    for s in sources:
+        sid = s.get("id")
+        if sid and sid not in seen:
+            seen[sid] = s
+    return list(seen.values())
+
+
+def _split_sources(sources: list[dict]) -> tuple[list[dict], list[dict]]:
+    unique = _dedupe_sources(sources)
+    docs = [s for s in unique if _is_document(s)]
+    public = [s for s in unique if not _is_document(s)]
+    return docs, public
+
+
+def _retrieval_line(docs: list[dict]) -> str:
+    return f"**Retrieval:** Grounded in internal documents ({len(docs)} retrieved)."
+
+
+def _grouped_source_lines(sources: list[dict], src: dict[str, dict], *, include_docs: bool = True) -> list[str]:
+    docs, public = _split_sources(sources)
+    if not include_docs:
+        docs = []
+    lines: list[str] = []
+    if docs:
+        lines += ["### Internal documents (RAG)", *_source_lines(docs, src)]
+    if public:
+        if docs:
+            lines.append("### Public sources")
+        lines += _source_lines(public, src)
+    return lines
+
+
 def questions_markdown(payload: dict) -> str:
     subtypes = ", ".join(payload["subtype_options"])
     focus = "; ".join(payload["focus_options"])
@@ -42,6 +80,11 @@ def briefing_markdown(b: dict, status: str = "draft") -> str:
         + (" (awaiting analyst approval)" if status == "draft" else ""),
         f"**Verification:** {v.get('claims_verified', 0)}/{v.get('claims_total', 0)} claims passed cite-or-drop"
         f" ({v.get('claims_removed', 0)} removed)",
+    ]
+    docs, _public = _split_sources(b.get("sources", []))
+    if docs:
+        out.append(_retrieval_line(docs))
+    out += [
         "",
         "## Executive summary",
         *_claims(b.get("executive_summary", []), src),
@@ -91,23 +134,33 @@ def briefing_markdown(b: dict, status: str = "draft") -> str:
         out += [f"- ~~{_cell(r['text'])}~~ ({r['section']}: {'; '.join(r['reasons'])})" for r in v["removed"]]
     if b.get("guardrail_events"):
         out += ["", "## Run log and guardrail events", *[f"- {e}" for e in b["guardrail_events"]]]
-    out += ["", f"## Sources ({len(b.get('sources', []))})", *_source_lines(b.get("sources", []), src)]
+    sources = _dedupe_sources(b.get("sources", []))
+    out += ["", f"## Sources ({len(sources)})", *_grouped_source_lines(sources, src)]
     return "\n".join(out)
 
 
 def _source_lines(sources: list[dict], src: dict[str, dict]) -> list[str]:
     lines = []
-    for s in sources:
+    for s in _dedupe_sources(sources):
         label = _cell(s["title"])
-        if s.get("type") == "document":
-            label = f"{label}, section \"{_cell(s.get('section'))}\" (internal document, synthetic)"
+        if _is_document(s):
+            loc = f"section \"{_cell(s.get('section'))}\""
+            if s.get("page") not in (None, ""):
+                loc += f", page {_cell(s.get('page'))}"
+            label = f"{label}, {loc} (internal document, synthetic)"
         lines.append(f"- {_cite(s['id'], src)}: {label}" + (f" ({s['date']})" if s.get("date") else ""))
     return lines
 
 
 def followup_markdown(answer: dict) -> str:
-    src = {s["id"]: s for s in answer.get("sources", [])}
-    out = [f"**Follow-up:** {_cell(answer['question'])}", ""]
+    sources = _dedupe_sources(answer.get("sources", []))
+    src = {s["id"]: s for s in sources}
+    docs, public = _split_sources(sources)
+    show_docs = bool(docs and answer.get("claims") and not answer.get("refused"))
+    out = [f"**Follow-up:** {_cell(answer['question'])}"]
+    if show_docs:
+        out.append(_retrieval_line(docs))
+    out.append("")
     if answer.get("refused"):
         return "\n".join(out + [answer["reason"]])
     if answer.get("claims"):
@@ -119,6 +172,7 @@ def followup_markdown(answer: dict) -> str:
         out += [f"- ~~{_cell(r['text'])}~~ ({'; '.join(r['reasons'])})" for r in answer["removed"]]
     if answer.get("tool_calls"):
         out += ["", "_Research steps: " + "; ".join(f"{t['tool']}({_cell(t['query'])}) -> {t['results']}" for t in answer["tool_calls"]) + "_"]
-    if answer.get("sources"):
-        out += ["", f"**Sources ({len(answer['sources'])})**", *_source_lines(answer["sources"], src)]
+    listed = (docs if show_docs else []) + public
+    if listed:
+        out += ["", f"**Sources ({len(listed)})**", *_grouped_source_lines(sources, src, include_docs=show_docs)]
     return "\n".join(out)

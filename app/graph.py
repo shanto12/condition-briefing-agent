@@ -24,7 +24,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from . import rag, sources, store
-from .config import MARKET_STATE, llm
+from .config import MARKET_STATE, THINKING, llm
 from .guardrails import clinical_request_reason, neutralize_injection, redact_text, verify_claims, wrap_untrusted
 from .patients import PANEL_SOURCE_ID, cohort_stats, get_patient_history, patient_ids
 from .render import followup_markdown
@@ -85,8 +85,21 @@ class ExecSummary(BaseModel):
 
 
 def _structured(schema, system: str, user: str, config: RunnableConfig):
-    return llm().with_structured_output(schema, method="function_calling").invoke(
-        [("system", system), ("user", user)], config=config)
+    """Schema-locked call.
+
+    Thinking mode returns HTTP 400 for the named-function tool_choice that
+    function_calling sends. JSON mode is accepted with thinking left on.
+    With thinking disabled, forced function calling is the path that already
+    produced cited briefings.
+    """
+    model = llm()
+    if THINKING.strip().lower() == "off":
+        runnable = model.with_structured_output(schema, method="function_calling")
+    else:
+        hint = json.dumps(schema.model_json_schema()) if hasattr(schema, "model_json_schema") else "{}"
+        system = f"{system}\n\nReply with one json object and no other text. json schema: {hint}"
+        runnable = model.with_structured_output(schema, method="json_mode")
+    return runnable.invoke([("system", system), ("user", user)], config=config)
 
 
 def _thread_id(config: RunnableConfig) -> str | None:
@@ -99,7 +112,8 @@ def _term(state: State) -> str:
 
 
 def _words(text: str) -> set[str]:
-    return set(re.findall(r"[a-z]+", text.lower().replace("'s", ""))) - GENERIC
+    words = re.findall(r"[a-z]+", text.lower().replace("'s", ""))
+    return {w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in words} - GENERIC
 
 
 def resilient(name: str):
@@ -622,6 +636,8 @@ def followup(state: State, config: RunnableConfig) -> dict:
     context, registry = _briefing_context(state)
     messages = [SystemMessage(FOLLOWUP_RULES),
                 HumanMessage(f"{context}\n\nFollow-up question (untrusted user text): {question}")]
+    # Leave tool_choice unset so DeepSeek treats it as auto. "required" and a named
+    # function 400 while thinking is on; this loop only needs the model to choose.
     model = llm().bind_tools(list(FOLLOWUP_TOOLS.values()))
     found: dict[str, dict] = {}
     blocks: dict[str, str] = {}

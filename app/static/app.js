@@ -228,7 +228,7 @@ $("refresh").addEventListener("click", loadHistory);
 $("upload-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const file = $("upload-file").files[0];
-  if (!file) { $("upload-status").textContent = "Choose a .md, .txt or .pdf file first."; return; }
+  if (!file) { $("upload-status").textContent = "Choose a .md, .txt, .pdf, .xlsx or .csv file first."; return; }
   const form = new FormData();
   form.append("file", file);
   $("upload-status").textContent = `Uploading ${file.name}...`;

@@ -15,14 +15,14 @@ from pathlib import Path
 
 from app import config, rag
 
-CASES = Path(__file__).parent / "retrieval.jsonl"
+CASE_FILES = [Path(__file__).parent / "retrieval.jsonl", Path(__file__).parent / "retrieval_mixed.jsonl"]
 RESULTS = Path(__file__).parent / "results"
 MODELS = ["text-embedding-3-large", "text-embedding-3-small"]
 K = 5
 
 
-def load() -> list[dict]:
-    return [json.loads(line) for line in CASES.read_text().splitlines() if line.strip()]
+def load(path: Path = CASE_FILES[0]) -> list[dict]:
+    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
 
 
 def score_case(case: dict, hits: list[dict]) -> dict:
@@ -32,13 +32,16 @@ def score_case(case: dict, hits: list[dict]) -> dict:
                 "top_score": hits[0]["score"] if hits else None}
     rank = next((i + 1 for i, d in enumerate(docs[:K]) if d == case["expected_doc_id"]), None)
     return {"id": case["id"], "answerable": True, "hit": rank is not None, "rr": 1 / rank if rank else 0.0, "rank": rank,
-            "top_score": hits[0]["score"] if hits else None}
+            "top_score": hits[0]["score"] if hits else None, "top": docs[:3]}
+
+
+_synced: set[str] = set()
 
 
 def run(model: str, rerank: bool, cases: list[dict]) -> dict:
-    idx = rag.index("openai", model)
-    if idx.count() == 0:
-        rag.ingest_corpus(idx)
+    if model not in _synced:
+        rag.ingest_corpus(rag.index("openai", model))
+        _synced.add(model)
     retriever = rag.DocumentRetriever(provider="openai", model=model, k=K, rerank=rerank)
     rows, latencies = [], []
     for case in cases:
@@ -95,22 +98,28 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--langsmith", action="store_true")
     parser.add_argument("--model", action="append", help="limit to these embedding models")
+    parser.add_argument("--cases", action="append", help="case files (default: retrieval.jsonl and retrieval_mixed.jsonl)")
     args = parser.parse_args()
-    cases = load()
-    reports = [run(m, rr, cases) for m in (args.model or MODELS) for rr in (True, False)]
-    print(f"{'embedding model':24} {'rerank':6} {'recall@5':>8} {'MRR':>6} {'unanswerable':>12} {'min top score':>13} {'p50 ms':>7}")
-    for r in reports:
-        print(f"{r['model']:24} {'on' if r['rerank'] else 'off':6} {r['recall@5']:>8} {r['mrr']:>6} "
-              f"{'pass' if r['unanswerable_pass'] else 'FAIL':>12} {r['min_answerable_top_score']!s:>13} {r['p50_ms']:>7}")
-        for row in r["rows"]:
-            if (row["answerable"] and row["rank"] != 1) or (not row["answerable"] and not row["pass"]):
-                print(f"    {row['id']}: rank={row.get('rank')} top_score={row['top_score']}")
+    reports = []
+    for path in args.cases or CASE_FILES:
+        cases = load(path)
+        print(f"\n{Path(path).name} ({len(cases)} questions)")
+        print(f"{'embedding model':24} {'rerank':6} {'recall@5':>8} {'MRR':>6} {'unanswerable':>12} {'min top score':>13} {'p50 ms':>7}")
+        for m in args.model or MODELS:
+            for rr in (True, False):
+                r = {"cases": Path(path).name, **run(m, rr, cases)}
+                reports.append(r)
+                print(f"{r['model']:24} {'on' if r['rerank'] else 'off':6} {r['recall@5']:>8} {r['mrr']:>6} "
+                      f"{'pass' if r['unanswerable_pass'] else 'FAIL':>12} {r['min_answerable_top_score']!s:>13} {r['p50_ms']:>7}")
+                for row in r["rows"]:
+                    if (row["answerable"] and row["rank"] != 1) or (not row["answerable"] and not row["pass"]):
+                        print(f"    {row['id']}: rank={row.get('rank')} top_score={row['top_score']} top={row.get('top')}")
     RESULTS.mkdir(exist_ok=True)
     out = RESULTS / f"retrieval-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
     out.write_text(json.dumps(reports, indent=1))
     print(f"saved {out}")
     if args.langsmith:
-        langsmith_experiments(cases)
+        langsmith_experiments(load())
     return 0
 
 

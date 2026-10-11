@@ -162,7 +162,14 @@ E2E = [
 
 
 def e2e(results: list, cases: list[dict]) -> list[dict]:
-    from app.service import chat_turn
+    from langsmith.run_helpers import tracing_context
+
+    from app.service import chat_turn as app_chat_turn
+
+    def chat_turn(*args, **kwargs):
+        # Inside evaluate() LangChain adds a default, non-redacting tracer; only the app's redacting tracer may run.
+        with tracing_context(enabled=False, parent=False):
+            return app_chat_turn(*args, **kwargs)
 
     timings = []
     for spec in cases:
