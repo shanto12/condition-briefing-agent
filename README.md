@@ -1,5 +1,7 @@
 # Condition Briefing Agent (demo)
 
+**Live demo:** https://shantomathew-condition-briefing.hf.space (passphrase-gated; hosted free on a Hugging Face Docker Space).
+
 A web chat tool for a health system's strategy and planning team. An analyst types a condition (the demo uses
 **dementia**), answers three clarifying questions, and gets a cited briefing in about 13 seconds on an idle machine:
 
