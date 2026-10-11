@@ -23,3 +23,9 @@ evals/.evaldata
 **/*.pyc
 .DS_Store
 *.log
+
+# Not needed in the image
+render.yaml
+tests
+docs
+scripts

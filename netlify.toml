@@ -1,0 +1,10 @@
+# Static UI only. The API runs on Render (see render.yaml); set API_BASE in app/static/config.js.
+[build]
+  publish = "app/static"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"

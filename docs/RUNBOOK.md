@@ -90,3 +90,13 @@ standing in for `/data`:
 - **No OpenAI key:** it exited before serving.
 
 The pinned requirements resolve with Linux wheels only (amd64 and arm64). Not verified: `docker build` and `docker run`.
+
+## Cloud deploy (Render free + Netlify)
+
+API on Render (Docker web service, `render.yaml`), static UI on Netlify (different origin).
+- **Render dashboard env vars (secrets, `sync: false`):** `DEEPSEEK_API_KEY`, `OPENAI_API_KEY` (embeddings; the entrypoint exits without it), `PINECONE_API_KEY`, `LANGSMITH_API_KEY`, `DEMO_PASSPHRASE`, `CORS_ORIGINS` (e.g. `https://your-site.netlify.app`, comma list, no wildcard, no trailing path). Everything else is preset in `render.yaml`.
+- **Gate:** with `DEMO_PASSPHRASE` set, every `/api/*` call needs header `X-Demo-Key` (401 `demo_key_required` otherwise). `/healthz` and `/` stay open. Unset locally = gate off.
+- **Limits (per IP, in memory):** `RATE_LIMIT_CHAT_PER_HOUR=20`, `RATE_LIMIT_UPLOAD_PER_HOUR=10`, global `DAILY_CHAT_CAP=200` (UTC day); 429 `rate_limited` with `Retry-After`. IP is the first `X-Forwarded-For` hop. Counts reset on restart; only requests that pass the gate count.
+- **Ephemeral disk:** no persistent disk on free, so SQLite (sessions, briefings, audit) is empty after every deploy or cold start and Chroma is re-embedded (about 60 s, OpenAI embeddings cost). The free service sleeps after 15 min idle; first request wakes it. Run a single instance (limits and SQLite are per-process).
+- **Netlify side:** the front end must send `X-User` and `X-Demo-Key` and call the Render URL; add the Netlify origin to `CORS_ORIGINS`.
+- **Not verified:** `docker build`/`run` (Docker not installed), free-tier 512 MB memory fit.

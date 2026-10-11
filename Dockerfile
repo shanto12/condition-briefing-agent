@@ -51,6 +51,8 @@ USER 10001:10001
 VOLUME ["/data"]
 EXPOSE 8000
 
+# Render free tier: no persistent disk, so /data is ephemeral. Every cold start recreates empty SQLite files and
+# rebuilds Chroma (INGEST_ON_START=missing sees no index). Render injects $PORT; the entrypoint binds to it.
 # Secrets arrive as env vars at run time (DEEPSEEK_API_KEY, OPENAI_API_KEY, PINECONE_API_KEY, LANGSMITH_API_KEY).
 # None are baked in. DeepSeek is demo-only: real PHI needs a BAA-covered model endpoint.
 

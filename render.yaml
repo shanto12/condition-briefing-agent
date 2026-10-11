@@ -1,0 +1,38 @@
+# Render Blueprint: free Docker web service. Static front end lives on Netlify (different origin).
+# Secrets use sync: false, so Render prompts for them in the dashboard and they never live in git.
+services:
+  - type: web
+    name: condition-briefing-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: DEMO_PASSPHRASE
+        sync: false
+      - key: CORS_ORIGINS   # e.g. https://your-site.netlify.app (comma list, no wildcard)
+        sync: false
+      - key: INGEST_ON_START   # /data is ephemeral on free: index is rebuilt on each cold start
+        value: missing
+      - key: LANGSMITH_TRACING
+        value: "true"
+      - key: LANGSMITH_PROJECT
+        value: live-build-interview
+      - key: RATE_LIMIT_CHAT_PER_HOUR
+        value: "20"
+      - key: RATE_LIMIT_UPLOAD_PER_HOUR
+        value: "10"
+      - key: DAILY_CHAT_CAP
+        value: "200"

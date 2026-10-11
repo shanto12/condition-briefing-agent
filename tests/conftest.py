@@ -37,6 +37,10 @@ os.environ.update({
     "DEEPSEEK_API_KEY": "test-offline",
     "KEYCHAIN_ACCOUNT": "pytest-no-keychain",
     "ANONYMIZED_TELEMETRY": "False",
+    # Existing API tests share one TestClient IP; the production default (20/h) would throttle them.
+    "RATE_LIMIT_CHAT_PER_HOUR": "100000",
+    "RATE_LIMIT_UPLOAD_PER_HOUR": "100000",
+    "DAILY_CHAT_CAP": "100000",
 })
 
 import app.config  # noqa: E402,F401  (forces LANGSMITH_TRACING=false; re-enabled below for the pytest plugin only)

@@ -1,0 +1,2 @@
+# Netlify: serve this folder as the site root while keeping the /static/ URLs used by index.html.
+/static/*  /:splat  200

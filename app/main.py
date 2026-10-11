@@ -2,16 +2,18 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import loaders, store
+from . import gate, loaders, store
 from .render import briefing_markdown
 from .service import chat_turn, session_view
 
@@ -23,6 +25,7 @@ UPLOAD_MAX_BYTES = 2 * 1024 * 1024
 
 app = FastAPI(title="Condition Briefing Copilot", version="0.2.0")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+gate.install(app)  # innermost middleware: passphrase gate + rate limits (see order note below)
 
 
 @app.middleware("http")
@@ -35,6 +38,16 @@ async def security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
     return response
+
+
+# Middleware order (last added = outermost): CORS -> security headers -> gate/limits -> routes.
+# CORS is outermost so preflights are answered before the gate and 401/429 responses still carry CORS headers.
+_cors_origins = [o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip() and o.strip() != "*"]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware, allow_origins=_cors_origins, allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["X-User", "X-Demo-Key", "Content-Type"],
+        expose_headers=["Retry-After"], max_age=600)
 
 
 def require_user(x_user: str | None) -> str:
